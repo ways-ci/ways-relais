@@ -1,0 +1,35 @@
+{
+  "name": "piece-ways-relais",
+  "version": "0.1.0",
+  "description": "West African business data for Activepieces: phone numbers by country, CFA franc amounts in words, Ivorian public holidays and working days.",
+  "license": "MIT",
+  "author": "WAYS CI",
+  "homepage": "https://github.com/ways-ci/ways-relais/tree/main/paquets/piece-ways-relais#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ways-ci/ways-relais.git",
+    "directory": "paquets/piece-ways-relais"
+  },
+  "keywords": [
+    "activepieces",
+    "activepieces-piece",
+    "west-africa",
+    "cfa-franc",
+    "fcfa",
+    "cote-d-ivoire"
+  ],
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "dependencies": {
+    "@activepieces/pieces-framework": "0.32.0",
+    "tslib": "2.6.2"
+  },
+  "scripts": {
+    "coeur": "node ../../outils/copier-coeur.mjs src/coeur",
+    "build": "npm run coeur && tsc -p tsconfig.json && node ../../outils/empaqueter-piece.mjs",
+    "test": "npm run build && node --test test/*.test.cjs"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}

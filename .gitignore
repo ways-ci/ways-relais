@@ -2,3 +2,8 @@ node_modules/
 dist/
 *.tgz
 .env
+
+# Copies du coeur, regenerees a chaque build (outils/copier-coeur.mjs)
+paquets/*/nodes/*/coeur/
+paquets/*/src/coeur/
+*.tsbuildinfo

@@ -1,0 +1,53 @@
+name: Contrôles
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  coeur:
+    name: Cœur commun
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm test
+
+  n8n:
+    name: Nœud n8n (build et linter du catalogue)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: paquets/n8n-nodes-ways-relais
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+
+  activepieces:
+    name: Pièce Activepieces (build, traductions, actions)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: paquets/piece-ways-relais
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - run: npm test

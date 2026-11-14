@@ -1,0 +1,55 @@
+{
+	"name": "n8n-nodes-ways-relais",
+	"version": "0.1.0",
+	"description": "West African business data for n8n: phone numbers by country, CFA franc amounts in words, Ivorian public holidays and working days.",
+	"license": "MIT",
+	"homepage": "https://github.com/ways-ci/ways-relais/tree/main/paquets/n8n-nodes-ways-relais#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"west-africa",
+		"cfa-franc",
+		"fcfa",
+		"cote-d-ivoire",
+		"phone-number",
+		"public-holidays"
+	],
+	"author": {
+		"name": "WAYS CI",
+		"email": "30376269+ENJMN@users.noreply.github.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ways-ci/ways-relais.git",
+		"directory": "paquets/n8n-nodes-ways-relais"
+	},
+	"scripts": {
+		"coeur": "node ../../outils/copier-coeur.mjs nodes/WaysRelais/coeur",
+		"build": "npm run coeur && n8n-node build",
+		"lint": "npm run coeur && n8n-node lint",
+		"lint:fix": "npm run coeur && n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist",
+		"!dist/**/*.tsbuildinfo"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [],
+		"nodes": [
+			"dist/nodes/WaysRelais/WaysRelais.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.56.4",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^21.1.0",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
