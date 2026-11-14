@@ -1,0 +1,12 @@
+{
+  "name": "ways-relais",
+  "private": true,
+  "type": "module",
+  "description": "Pièces n8n et Activepieces pour l'Afrique de l'Ouest : numéros de la sous-région, montants FCFA, jours ouvrés en Côte d'Ivoire.",
+  "license": "MIT",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "node --test \"coeur/test/*.test.ts\"",
+    "types": "tsc -p tsconfig.json"
+  }
+}
