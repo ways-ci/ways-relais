@@ -6,6 +6,8 @@ Made by [WAYS CI](https://ways-ci.com) in Abidjan, for teams that automate invoi
 
 No credentials, no external call, no runtime dependency: everything runs inside your n8n.
 
+Full guide in French: [docs/aide.md](https://github.com/ways-ci/ways-relais/blob/main/docs/aide.md).
+
 ## Installation
 
 Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) and install `n8n-nodes-ways-relais`.

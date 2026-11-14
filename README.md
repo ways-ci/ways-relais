@@ -8,6 +8,8 @@ Trois actions pour n8n et Activepieces, pensées pour les entreprises de la sous
 | **Montant FCFA** | `1 500 000 FCFA` et « un million cinq cent mille francs CFA » | un montant à virgule (le franc CFA n'a pas de centimes), négatif, ou au-delà de 999 milliards |
 | **Jour férié et jour ouvré** | si un jour est férié en Côte d'Ivoire, et le prochain jour ouvré | une date qui n'existe pas (29 février 2027, 31 avril) |
 
+**Le guide d'utilisation en français : [docs/aide.md](docs/aide.md).**
+
 Pays pris en charge : Côte d'Ivoire, Burkina Faso, Sénégal, Mali, Togo, Bénin, Niger.
 
 ## Trois règles
@@ -30,7 +32,8 @@ texte officiel. D'ici là, un jour de remplacement annoncé s'ajoute à la table
 - [x] Le cœur commun (`coeur/`), sans aucune dépendance, et ses contrôles
 - [x] Le nœud n8n (`paquets/n8n-nodes-ways-relais`) : linter du catalogue passé, essayé dans n8n 2.47.7
 - [x] La pièce Activepieces (`paquets/piece-ways-relais`) : installée et exécutée dans Activepieces 0.93.0, en français
-- [ ] Publication sur npm (compte npm, flux de publication avec provenance)
+- [x] Le guide en français (`docs/aide.md`)
+- [ ] Publication sur npm (flux `.github/workflows/publier.yml`, provenance)
 - [ ] Demande de vérification chez n8n
 
 ## Comment c'est rangé

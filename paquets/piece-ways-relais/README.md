@@ -22,6 +22,8 @@ The step fails rather than approximates, and the message ends with a stable code
 
 Trois actions pour les entreprises de la sous-région : le numéro au format international selon le pays (le pays se choisit, il ne se devine jamais), le montant en francs CFA en chiffres et en lettres, et le jour férié ivoirien avec le prochain jour ouvré. Chaque refus dit sa raison en français.
 
+Le guide complet : [docs/aide.md](https://github.com/ways-ci/ways-relais/blob/main/docs/aide.md).
+
 ## License
 
 MIT
