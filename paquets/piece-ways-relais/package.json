@@ -1,6 +1,6 @@
 {
   "name": "piece-ways-relais",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "West African business data for Activepieces: phone numbers by country, CFA franc amounts in words, Ivorian public holidays and working days.",
   "license": "MIT",
   "author": "WAYS CI",
