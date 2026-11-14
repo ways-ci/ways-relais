@@ -7,7 +7,7 @@
   "homepage": "https://github.com/ways-ci/ways-relais/tree/main/paquets/piece-ways-relais#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ways-ci/ways-relais.git",
+    "url": "git+https://github.com/ways-ci/ways-relais.git",
     "directory": "paquets/piece-ways-relais"
   },
   "keywords": [
