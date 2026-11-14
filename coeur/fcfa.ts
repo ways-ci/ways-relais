@@ -15,48 +15,52 @@
 export const MONTANT_MAX = 999_999_999_999
 
 /** Espace insécable : un montant ne se coupe jamais en fin de ligne. */
-const INSECABLE = ' '
+const INSECABLE = '\u00a0'
+
+import { refus } from './refus.ts'
+import type { Refus } from './refus.ts'
 
 export type ResultatMontant =
   | { ok: true; montant: number; chiffres: string; lettres: string }
-  | { ok: false; erreur: string }
+  | Refus
 
 /**
  * Lit un montant. Accepte un nombre entier, ou un texte de chiffres dont les
  * milliers sont séparés par des espaces ou des points, groupés par trois
  * (« 1 500 000 », « 1.500.000 »). Tout le reste est refusé avec sa raison.
  */
-export function lireMontant(valeur: unknown): { ok: true; montant: number } | { ok: false; erreur: string } {
+export function lireMontant(valeur: unknown): { ok: true; montant: number } | Refus {
   if (typeof valeur === 'number') {
-    if (!Number.isFinite(valeur)) return { ok: false, erreur: "Ce n'est pas un montant." }
+    if (!Number.isFinite(valeur)) return refus('MONTANT_ILLISIBLE', "Ce n'est pas un montant.", 'Not an amount.')
     if (!Number.isInteger(valeur)) {
-      return { ok: false, erreur: "Montant à virgule refusé : le franc CFA n'a pas de centimes." }
+      return refus('MONTANT_A_VIRGULE', "Montant à virgule refusé : le franc CFA n'a pas de centimes.", 'Decimal amounts are refused: the CFA franc has no cents.')
     }
     return borner(valeur)
   }
-  if (typeof valeur !== 'string') return { ok: false, erreur: 'Montant manquant.' }
+  if (typeof valeur !== 'string') return refus('MONTANT_MANQUANT', 'Montant manquant.', 'Amount is missing.')
 
-  const t = valeur.trim().replace(/[\s  ]/g, ' ').replace(/\s*(F\s*CFA|FCFA|XOF|F)$/i, '').trim()
-  if (!t) return { ok: false, erreur: 'Montant manquant.' }
+  const t = valeur.trim().replace(/[\s\u00a0\u202f]/g, ' ').replace(/\s*(F\s*CFA|FCFA|XOF|F)$/i, '').trim()
+  if (!t) return refus('MONTANT_MANQUANT', 'Montant manquant.', 'Amount is missing.')
   if (t.includes(',')) {
-    return { ok: false, erreur: "Montant à virgule refusé : le franc CFA n'a pas de centimes." }
+    return refus('MONTANT_A_VIRGULE', "Montant à virgule refusé : le franc CFA n'a pas de centimes.", 'Decimal amounts are refused: the CFA franc has no cents.')
   }
-  if (t.startsWith('-')) return { ok: false, erreur: 'Montant négatif refusé.' }
+  if (t.startsWith('-')) return refus('MONTANT_NEGATIF', 'Montant négatif refusé.', 'Negative amounts are refused.')
   const groupesValides = /^\d+$/.test(t) || /^\d{1,3}([ .]\d{3})+$/.test(t)
   if (!groupesValides) {
-    return {
-      ok: false,
-      erreur: t.includes('.')
-        ? "Montant à virgule refusé : le franc CFA n'a pas de centimes. Les milliers s'écrivent par groupes de trois (1.500.000)."
-        : `Montant illisible : « ${valeur} ».`,
-    }
+    return t.includes('.')
+      ? refus(
+          'MONTANT_A_VIRGULE',
+          "Montant à virgule refusé : le franc CFA n'a pas de centimes. Les milliers s'écrivent par groupes de trois (1.500.000).",
+          'Decimal amounts are refused: the CFA franc has no cents. Thousands are written in groups of three (1.500.000).',
+        )
+      : refus('MONTANT_ILLISIBLE', `Montant illisible : « ${valeur} ».`, `Unreadable amount: "${valeur}".`)
   }
   return borner(Number(t.replace(/[ .]/g, '')))
 }
 
-function borner(n: number): { ok: true; montant: number } | { ok: false; erreur: string } {
-  if (n < 0) return { ok: false, erreur: 'Montant négatif refusé.' }
-  if (n > MONTANT_MAX) return { ok: false, erreur: 'Montant trop grand : 999 milliards au plus.' }
+function borner(n: number): { ok: true; montant: number } | Refus {
+  if (n < 0) return refus('MONTANT_NEGATIF', 'Montant négatif refusé.', 'Negative amounts are refused.')
+  if (n > MONTANT_MAX) return refus('MONTANT_TROP_GRAND', 'Montant trop grand : 999 milliards au plus.', 'Amount too large: 999 billion at most.')
   return { ok: true, montant: n }
 }
 

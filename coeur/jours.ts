@@ -23,6 +23,9 @@
  * Abidjan vit à l'heure UTC toute l'année : une date se lit en UTC.
  */
 
+import { refus } from './refus.ts'
+import type { Refus } from './refus.ts'
+
 export interface DateSimple {
   annee: number
   mois: number
@@ -93,12 +96,12 @@ const MOIS = [
  * bissextile, le 31 avril) au lieu de le reporter au lendemain comme le fait
  * JavaScript.
  */
-export function lireDate(valeur: unknown): { ok: true; date: DateSimple } | { ok: false; erreur: string } {
+export function lireDate(valeur: unknown): { ok: true; date: DateSimple } | Refus {
   if (valeur instanceof Date) {
-    if (Number.isNaN(valeur.getTime())) return { ok: false, erreur: 'Date invalide.' }
+    if (Number.isNaN(valeur.getTime())) return refus('DATE_ILLISIBLE', 'Date invalide.', 'Invalid date.')
     return borner({ annee: valeur.getUTCFullYear(), mois: valeur.getUTCMonth() + 1, jour: valeur.getUTCDate() })
   }
-  if (typeof valeur !== 'string' || !valeur.trim()) return { ok: false, erreur: 'Date manquante.' }
+  if (typeof valeur !== 'string' || !valeur.trim()) return refus('DATE_MANQUANTE', 'Date manquante.', 'Date is missing.')
   const t = valeur.trim()
 
   let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t)
@@ -111,23 +114,31 @@ export function lireDate(valeur: unknown): { ok: true; date: DateSimple } | { ok
     const partie = verifier(+m[1], +m[2], +m[3], t)
     if (!partie.ok) return partie
     const d = new Date(t)
-    if (Number.isNaN(d.getTime())) return { ok: false, erreur: `Date illisible : « ${t} ».` }
+    if (Number.isNaN(d.getTime())) return refus('DATE_ILLISIBLE', `Date illisible : « ${t} ».`, `Unreadable date: "${t}".`)
     return lireDate(d)
   }
-  return { ok: false, erreur: `Date illisible : « ${t} ». Formats acceptés : 2026-05-27 ou 27/05/2026.` }
+  return refus(
+    'DATE_ILLISIBLE',
+    `Date illisible : « ${t} ». Formats acceptés : 2026-05-27 ou 27/05/2026.`,
+    `Unreadable date: "${t}". Accepted formats: 2026-05-27 or 27/05/2026.`,
+  )
 }
 
 function verifier(annee: number, mois: number, jour: number, texte: string) {
   const d = new Date(Date.UTC(annee, mois - 1, jour))
   if (d.getUTCFullYear() !== annee || d.getUTCMonth() !== mois - 1 || d.getUTCDate() !== jour) {
-    return { ok: false as const, erreur: `Cette date n'existe pas : « ${texte} ».` }
+    return refus('DATE_INEXISTANTE', `Cette date n'existe pas : « ${texte} ».`, `This date does not exist: "${texte}".`)
   }
   return borner({ annee, mois, jour })
 }
 
-function borner(d: DateSimple): { ok: true; date: DateSimple } | { ok: false; erreur: string } {
+function borner(d: DateSimple): { ok: true; date: DateSimple } | Refus {
   if (d.annee < ANNEE_MIN || d.annee > ANNEE_MAX) {
-    return { ok: false, erreur: `Année ${d.annee} hors du calendrier pris en charge (${ANNEE_MIN} à ${ANNEE_MAX}).` }
+    return refus(
+      'ANNEE_HORS_CALENDRIER',
+      `Année ${d.annee} hors du calendrier pris en charge (${ANNEE_MIN} à ${ANNEE_MAX}).`,
+      `Year ${d.annee} is outside the supported calendar (${ANNEE_MIN} to ${ANNEE_MAX}).`,
+    )
   }
   return { ok: true, date: d }
 }
@@ -291,19 +302,23 @@ export function prochainJourOuvre(d: DateSimple, options: OptionsOuvre = {}): Re
  * Valide une liste de jours annoncés fournie par l'utilisateur : date réelle,
  * nom parmi les quatre fêtes, source non vide. Une erreur par ligne fautive.
  */
-export function lireAjouts(valeur: unknown): { ok: true; ajouts: JourAnnonce[] } | { ok: false; erreur: string } {
+export function lireAjouts(valeur: unknown): { ok: true; ajouts: JourAnnonce[] } | Refus {
   if (valeur === undefined || valeur === null || valeur === '') return { ok: true, ajouts: [] }
-  if (!Array.isArray(valeur)) return { ok: false, erreur: 'Les jours annoncés doivent être une liste.' }
+  if (!Array.isArray(valeur)) return refus('AJOUTS_PAS_UNE_LISTE', 'Les jours annoncés doivent être une liste.', 'Announced days must be a list.')
   const ajouts: JourAnnonce[] = []
   for (const [i, brut] of valeur.entries()) {
     const ligne = brut as Partial<JourAnnonce>
     const d = lireDate(ligne?.date)
-    if (!d.ok) return { ok: false, erreur: `Jour annoncé n° ${i + 1} : ${d.erreur}` }
+    if (!d.ok) return refus(d.code, `Jour annoncé n° ${i + 1} : ${d.erreur}`, `Announced day #${i + 1}: ${d.message}`)
     const nom = String(ligne?.nom ?? '').trim()
     const source = String(ligne?.source ?? '').trim()
-    if (!nom) return { ok: false, erreur: `Jour annoncé n° ${i + 1} : nom manquant.` }
+    if (!nom) return refus('AJOUT_SANS_NOM', `Jour annoncé n° ${i + 1} : nom manquant.`, `Announced day #${i + 1}: name is missing.`)
     if (!source) {
-      return { ok: false, erreur: `Jour annoncé n° ${i + 1} : source manquante. Une date annoncée se cite, elle ne se devine pas.` }
+      return refus(
+        'AJOUT_SANS_SOURCE',
+        `Jour annoncé n° ${i + 1} : source manquante. Une date annoncée se cite, elle ne se devine pas.`,
+        `Announced day #${i + 1}: source is missing. An announced date is cited, never guessed.`,
+      )
     }
     ajouts.push({ date: versIso(d.date), nom, source })
   }

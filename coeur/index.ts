@@ -3,6 +3,10 @@
  * que le nœud n8n et la pièce Activepieces appellent tous deux : la règle vit
  * ici, une seule fois.
  */
+export { actionNumero, actionMontant, actionJour } from './actions.ts'
+export type { Resultat, SortieNumero, SortieMontant, SortieJour, OptionsJour, Certitude } from './actions.ts'
+export { refus } from './refus.ts'
+export type { Refus } from './refus.ts'
 export { PAYS, pays, numeroInternational } from './pays.ts'
 export type { Pays, ResultatNumero } from './pays.ts'
 export { MONTANT_MAX, lireMontant, enChiffres, enLettres, nombreEnLettres, montantFcfa } from './fcfa.ts'

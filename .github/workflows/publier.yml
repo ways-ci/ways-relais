@@ -1,0 +1,76 @@
+name: Publier sur npm
+
+# Publication à la main, un paquet à la fois, depuis main seulement.
+# Provenance npm : chaque version publiée porte la preuve qu'elle a été
+# construite ici, à partir de ce commit (exigé par n8n depuis le 01/05/2026).
+on:
+  workflow_dispatch:
+    inputs:
+      paquet:
+        description: 'Paquet à publier'
+        required: true
+        type: choice
+        options:
+          - n8n-nodes-ways-relais
+          - piece-ways-relais
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publier-${{ inputs.paquet }}
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    name: Publier ${{ inputs.paquet }}
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: paquets/${{ inputs.paquet }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cœur commun
+        working-directory: .
+        run: npm test
+
+      - name: Version déjà publiée ?
+        run: |
+          NOM=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NOM@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::$NOM@$VERSION existe déjà sur npm : monter la version avant de publier."
+            exit 1
+          fi
+          echo "Publication de $NOM@$VERSION"
+
+      - run: npm ci --no-audit --no-fund
+
+      # Jeton npm tant que la publication de confiance (OIDC) n'est pas réglée
+      # sur npmjs.com ; ensuite le secret NPM_TOKEN se supprime et rien ne change ici.
+      - name: Jeton npm (si présent)
+        run: |
+          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" || true
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # n8n : la commande officielle passe le linter, construit, puis publie
+      # avec provenance quand elle tourne dans GitHub Actions.
+      - name: Publier le nœud n8n
+        if: inputs.paquet == 'n8n-nodes-ways-relais'
+        run: npm run release
+
+      # Activepieces : le paquet publié est dist/ (traductions comprises).
+      - name: Publier la pièce Activepieces
+        if: inputs.paquet == 'piece-ways-relais'
+        run: |
+          npm test
+          npm publish ./dist --provenance --access public

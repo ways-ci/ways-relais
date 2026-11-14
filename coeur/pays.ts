@@ -19,6 +19,8 @@
 export interface Pays {
   code: string
   nom: string
+  /** Le nom en anglais, pour les interfaces qui l'exigent (catalogue de n8n). */
+  nomAnglais: string
   indicatif: string
   /**
    * Le zéro national se conserve-t-il après l'indicatif ? Vrai en Côte
@@ -33,22 +35,25 @@ export interface Pays {
 }
 
 export const PAYS: readonly Pays[] = [
-  { code: 'CI', nom: "Côte d'Ivoire", indicatif: '225', zeroConserve: true, longueurs: [10], exemple: '07 00 00 00 00' },
-  { code: 'BF', nom: 'Burkina Faso', indicatif: '226', zeroConserve: false, longueurs: [8], exemple: '70 00 00 00' },
-  { code: 'SN', nom: 'Sénégal', indicatif: '221', zeroConserve: false, longueurs: [9], exemple: '77 000 00 00' },
-  { code: 'ML', nom: 'Mali', indicatif: '223', zeroConserve: false, longueurs: [8], exemple: '70 00 00 00' },
-  { code: 'TG', nom: 'Togo', indicatif: '228', zeroConserve: false, longueurs: [8], exemple: '90 00 00 00' },
+  { code: 'CI', nom: "Côte d'Ivoire", nomAnglais: "Côte d'Ivoire", indicatif: '225', zeroConserve: true, longueurs: [10], exemple: '07 00 00 00 00' },
+  { code: 'BF', nom: 'Burkina Faso', nomAnglais: 'Burkina Faso', indicatif: '226', zeroConserve: false, longueurs: [8], exemple: '70 00 00 00' },
+  { code: 'SN', nom: 'Sénégal', nomAnglais: 'Senegal', indicatif: '221', zeroConserve: false, longueurs: [9], exemple: '77 000 00 00' },
+  { code: 'ML', nom: 'Mali', nomAnglais: 'Mali', indicatif: '223', zeroConserve: false, longueurs: [8], exemple: '70 00 00 00' },
+  { code: 'TG', nom: 'Togo', nomAnglais: 'Togo', indicatif: '228', zeroConserve: false, longueurs: [8], exemple: '90 00 00 00' },
   // Bénin : numéros passés à dix chiffres commençant par « 01 », et ce zéro
   // fait partie du numéro (+229 01 97 45 22 18). L'ancienne forme à huit
   // chiffres reste admise.
-  { code: 'BJ', nom: 'Bénin', indicatif: '229', zeroConserve: false, longueurs: [8, 10], exemple: '01 90 00 00 00' },
-  { code: 'NE', nom: 'Niger', indicatif: '227', zeroConserve: false, longueurs: [8], exemple: '90 00 00 00' },
+  { code: 'BJ', nom: 'Bénin', nomAnglais: 'Benin', indicatif: '229', zeroConserve: false, longueurs: [8, 10], exemple: '01 90 00 00 00' },
+  { code: 'NE', nom: 'Niger', nomAnglais: 'Niger', indicatif: '227', zeroConserve: false, longueurs: [8], exemple: '90 00 00 00' },
 ]
 
 export function pays(code: string | null | undefined): Pays | undefined {
   if (!code) return undefined
   return PAYS.find((p) => p.code === code.trim().toUpperCase())
 }
+
+import { refus } from './refus.ts'
+import type { Refus } from './refus.ts'
 
 export type ResultatNumero =
   | {
@@ -60,7 +65,7 @@ export type ResultatNumero =
       pays: string
       nomPays: string
     }
-  | { ok: false; erreur: string }
+  | Refus
 
 /**
  * Met un numéro en écriture internationale selon le pays donné.
@@ -71,27 +76,32 @@ export type ResultatNumero =
  */
 export function numeroInternational(numero: unknown, codePays: unknown): ResultatNumero {
   if (codePays === null || codePays === undefined || String(codePays).trim() === '') {
-    return { ok: false, erreur: 'Pays manquant : le pays se choisit, il ne se devine pas.' }
+    return refus('PAYS_MANQUANT', 'Pays manquant : le pays se choisit, il ne se devine pas.', 'Country is missing: the country is chosen, never guessed.')
   }
   const p = pays(String(codePays))
   if (!p) {
     const connus = PAYS.map((x) => x.code).join(', ')
-    return { ok: false, erreur: `Pays « ${String(codePays)} » inconnu. Pays pris en charge : ${connus}.` }
+    return refus(
+      'PAYS_INCONNU',
+      `Pays « ${String(codePays)} » inconnu. Pays pris en charge : ${connus}.`,
+      `Unknown country "${String(codePays)}". Supported countries: ${connus}.`,
+    )
   }
 
   const brut = numero === null || numero === undefined ? '' : String(numero).trim()
   let n = brut.replace(/\D/g, '')
-  if (!n) return { ok: false, erreur: 'Numéro vide.' }
+  if (!n) return refus('NUMERO_VIDE', 'Numéro vide.', 'Phone number is empty.')
 
   const ecritInternational = brut.startsWith('+') || n.startsWith('00')
   if (n.startsWith('00')) n = n.slice(2)
 
   if (ecritInternational) {
     if (!n.startsWith(p.indicatif)) {
-      return {
-        ok: false,
-        erreur: `Le numéro porte un autre indicatif que celui du pays choisi (${p.nom}, +${p.indicatif}).`,
-      }
+      return refus(
+        'INDICATIF_CONTREDIT',
+        `Le numéro porte un autre indicatif que celui du pays choisi (${p.nom}, +${p.indicatif}).`,
+        `The number carries another calling code than the chosen country (${p.code}, +${p.indicatif}).`,
+      )
     }
     n = n.slice(p.indicatif.length)
   } else if (n.startsWith(p.indicatif) && n.length > Math.max(...p.longueurs)) {
@@ -102,10 +112,11 @@ export function numeroInternational(numero: unknown, codePays: unknown): Resulta
 
   const national = normaliserNational(n, p)
   if (national === null) {
-    return {
-      ok: false,
-      erreur: `Ce numéro ne correspond pas au format ${p.nom} (exemple : ${p.exemple}).`,
-    }
+    return refus(
+      'FORMAT_NUMERO',
+      `Ce numéro ne correspond pas au format ${p.nom} (exemple : ${p.exemple}).`,
+      `This number does not match the format of ${p.code} (example: ${p.exemple}).`,
+    )
   }
   const international = `${p.indicatif}${national}`
   return { ok: true, international, e164: `+${international}`, pays: p.code, nomPays: p.nom }
