@@ -1,13 +1,18 @@
 name: Publier sur npm
 
 # Publication à la main, un paquet à la fois, depuis main seulement.
-# Provenance npm : chaque version publiée porte la preuve qu'elle a été
-# construite ici, à partir de ce commit (exigé par n8n depuis le 01/05/2026).
+#
+# Aucun jeton : GitHub s'identifie auprès de npm par la publication de
+# confiance (OIDC), réglée sur npmjs.com pour ce dépôt et ce fichier.
+# La version est DÉPOSÉE EN ATTENTE (npm stage publish), avec sa provenance :
+# elle ne sort qu'après l'approbation d'EBAKA, double authentification
+# comprise (npm stage approve <id>). Même un compte GitHub compromis ne peut
+# donc rien publier seul.
 on:
   workflow_dispatch:
     inputs:
       paquet:
-        description: 'Paquet à publier'
+        description: 'Paquet à déposer pour approbation'
         required: true
         type: choice
         options:
@@ -24,7 +29,7 @@ concurrency:
 
 jobs:
   publier:
-    name: Publier ${{ inputs.paquet }}
+    name: Déposer ${{ inputs.paquet }}
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     defaults:
@@ -38,11 +43,16 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      # La commande « stage » et la publication de confiance demandent un npm
+      # récent : version fixée, pas « latest ».
+      - name: npm 11.21.2
+        run: npm install -g npm@11.21.2 && npm --version
+
       - name: Cœur commun
         working-directory: .
         run: npm test
 
-      - name: Version déjà publiée ?
+      - name: Version déjà publiée ou déposée ?
         run: |
           NOM=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
@@ -50,27 +60,28 @@ jobs:
             echo "::error::$NOM@$VERSION existe déjà sur npm : monter la version avant de publier."
             exit 1
           fi
-          echo "Publication de $NOM@$VERSION"
+          echo "Dépôt de $NOM@$VERSION"
 
       - run: npm ci --no-audit --no-fund
 
-      # Jeton npm tant que la publication de confiance (OIDC) n'est pas réglée
-      # sur npmjs.com ; ensuite le secret NPM_TOKEN se supprime et rien ne change ici.
-      - name: Jeton npm (si présent)
-        run: |
-          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" || true
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # n8n : la commande officielle passe le linter, construit, puis publie
-      # avec provenance quand elle tourne dans GitHub Actions.
-      - name: Publier le nœud n8n
+      # n8n : linter du catalogue et build par l'outil officiel ; RELEASE_MODE
+      # lève la garde « prepublishOnly » de n8n-node, comme le fait sa commande
+      # « release » dans GitHub Actions.
+      - name: Déposer le nœud n8n
         if: inputs.paquet == 'n8n-nodes-ways-relais'
-        run: npm run release
+        run: |
+          npm run lint
+          npm run build
+          npm stage publish --provenance --access public
+        env:
+          RELEASE_MODE: 'true'
 
       # Activepieces : le paquet publié est dist/ (traductions comprises).
-      - name: Publier la pièce Activepieces
+      - name: Déposer la pièce Activepieces
         if: inputs.paquet == 'piece-ways-relais'
         run: |
           npm test
-          npm publish ./dist --provenance --access public
+          npm stage publish ./dist --provenance --access public
+
+      - name: Versions en attente d'approbation
+        run: npm stage list "$(node -p "require('./package.json').name")" || true

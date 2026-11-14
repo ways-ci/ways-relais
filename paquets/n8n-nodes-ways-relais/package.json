@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-ways-relais",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "West African business data for n8n: phone numbers by country, CFA franc amounts in words, Ivorian public holidays and working days.",
 	"license": "MIT",
 	"homepage": "https://github.com/ways-ci/ways-relais/tree/main/paquets/n8n-nodes-ways-relais#readme",
